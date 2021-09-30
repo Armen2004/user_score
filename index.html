@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>User score</title>
+    <style>
+        #table {
+            font-family: Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #table td, #table th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        #table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        #table tr:hover {
+            background-color: #ddd;
+        }
+
+        #table th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color: #04AA6D;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<form id="uploadForm">
+    <input type="file" id="csvFile" accept=".csv" />
+    <br />
+    <input type="submit" value="Submit" />
+</form>
+<hr>
+
+<div id="result">
+    <table id="table">
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+    </table>
+    <hr>
+</div>
+<script>
+    const uploadForm = document.getElementById('uploadForm');
+    const csvFile = document.getElementById('csvFile');
+    const result = document.getElementById('result');
+    const thead = document.getElementById('thead');
+    const tbody = document.getElementById('tbody');
+    result.style.display = 'none'
+
+    uploadForm.addEventListener('submit', e => {
+        e.preventDefault();
+        thead.innerHTML = '';
+        tbody.innerHTML = '';
+        const input = csvFile.files[0];
+        const reader = new FileReader();
+
+        reader.onload = e => {
+            result.style.display = 'block'
+            const text = e.target.result;
+            const data = csvToArray(text);
+            const headers = data[0];
+            const rows = data[1];
+            let header = document.createElement('tr');
+            let heading;
+            headers.map(row => {
+                heading = document.createElement('th');
+                heading.innerHTML = row;
+                header.appendChild(heading);
+            });
+            thead.appendChild(header);
+
+            let rowHeader;
+            rows.map(row => {
+                rowHeader = document.createElement('tr');
+                row.map(item => {
+                    heading = document.createElement('td');
+                    heading.innerHTML = item;
+                    rowHeader.appendChild(heading);
+                });
+                tbody.appendChild(rowHeader);
+            });
+        };
+
+        reader.readAsText(input);
+    });
+
+    function csvToArray(str, delimiter = ',') {
+        const headers = str.slice(0, str.indexOf('\n')).trim('\r').split(delimiter);
+        headers.push('Scoring')
+        const rows = str.slice(str.indexOf('\n') + 1).trim('\r').split('\n');
+        const arr = rows.map((content, index, array) => {
+            let row = content.trim('\r').split(delimiter);
+            let score = 0;
+            let userScoreText = '';
+            for (let i = index + 1; i < rows.length; i++) {
+                score = 0;
+                let prevUser = array[i].trim('\r').split(delimiter);
+                if (row[2] === prevUser[2]) {
+                    score += 30;
+                }
+                if (Math.abs(parseInt(row[3]) - parseInt(prevUser[3])) <= 5) {
+                    score += 30;
+                }
+                if (parseInt(row[4]) === parseInt(prevUser[4])) {
+                    score += 40;
+                }
+                userScoreText += `${ row[0] } will be matched with ${ prevUser[0] } - ${ score }% <br>`;
+            }
+
+            if (userScoreText) {
+                userScoreText = `In the case of ${ array.length } employees the highest average match score is ${ parseInt(score / array.length) }% <br> ${ userScoreText }`;
+            }
+            row.push(userScoreText);
+            return row;
+        });
+        return [ headers, arr ];
+    }
+</script>
+</body>
+</html>
